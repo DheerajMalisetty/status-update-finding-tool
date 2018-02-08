@@ -34,8 +34,7 @@ def get_credentials():
     credential_dir = os.path.join(home_dir, '.credentials')
     if not os.path.exists(credential_dir):
         os.makedirs(credential_dir)
-    credential_path = os.path.join(credential_dir,
-                                   'gmail-python-quickstart.json')
+    credential_path = os.path.join(credential_dir, 'gmail-python-quickstart.json')
 
     store = Storage(credential_path)
     credentials = store.get()
@@ -48,6 +47,8 @@ def get_credentials():
             credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
     return credentials
+
+
 def main(service, user_id='me'):
     threads = service.users().threads().list(userId=user_id).execute().get('threads', [])
     for thread in threads:

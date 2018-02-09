@@ -1,7 +1,7 @@
-mport print_function
 import httplib2
 import os
-
+import base64
+import email
 from apiclient import discovery
 from oauth2client import client
 from oauth2client import tools
@@ -31,6 +31,7 @@ def get_credentials():
     Returns:
         Credentials, the obtained credential.
     """
+    #This function generates the required credentials required to make api calls
     home_dir = os.path.expanduser('~')
     credential_dir = os.path.join(home_dir, '.credentials')
     if not os.path.exists(credential_dir):
@@ -49,19 +50,31 @@ def get_credentials():
             credentials = tools.run(flow, store)
         print('Storing credentials to ' + credential_path)
     return credentials
+def GetMsg(service, user_id, msg_id):
+#This user defined message prints the email id's  and their total number emails,of the senders who has sent status updates except user's 
+  try:
+    message = service.users().messages().get(userId=user_id, id=msg_id,
+                                             format='metadata').execute()
 
+    payload = message["payload"]["headers"]
+    
+    a = "X-Original-Sender"
+    k=0
+    #The below part prints the email id's
+    for d in payload:
+      if a in d["name"]:
+        k+=1
+        print d["value"]   
+
+    # msg_str = base64.urlsafe_b64decode(message['raw'].encode('ASCII'))
+
+    # mime_msg = email.message_from_string(msg_str)
+
+    return "mime_msg"
+  except errors.HttpError, error:
+    print 'An error occurred: %s' % error
 
 def get_label_id(service, user_id, label_name):
-    """Get a list all labels in the user's mailbox.
-
-    Args:
-      service: Authorized Gmail API service instance.
-      user_id: User's email address. The special value "me"
-      can be used to indicate the authenticated user.
-
-    Returns:
-      A list all Labels in the user's mailbox.
-    """
     foss_label_id = ""
     try:
         response = service.users().labels().list(userId=user_id).execute()
@@ -108,24 +121,78 @@ def ListMessagesWithLabels(service, user_id, label_ids=[]):
     except errors.HttpError, error:
         print
         'An error occurred: %s' % error
+def ListMessagesMatchingQuery(service, user_id, query=''):
+  """List all Messages of the user's mailbox matching the query.
 
+  Args:
+    service: Authorized Gmail API service instance.
+    user_id: User's email address. The special value "me"
+    can be used to indicate the authenticated user.
+    query: String used to filter messages returned.
+    Eg.- 'from:user@some_domain.com' for Messages from a particular sender.
 
+  Returns:
+    List of Messages that match the criteria of the query. Note that the
+    returned list contains Message IDs, you must use get with the
+    appropriate ID to get the details of a Message.
+  """
+  try:
+    response = service.users().messages().list(userId=user_id,
+                                               q=query).execute()
+    messages = []
+    if 'messages' in response:
+      messages.extend(response['messages'])
+
+    while 'nextPageToken' in response:
+      page_token = response['nextPageToken']
+      response = service.users().messages().list(userId=user_id, q=query,
+                                         pageToken=page_token).execute()
+      messages.extend(response['messages'])
+
+    return messages
+  except errors.HttpError, error:
+    print 'An error occurred: %s' % error        
+def ListMessagesMatchingQuery(service, user_id, query=''):
+  """List all Messages of the user's mailbox matching the query.
+
+  Args:
+    service: Authorized Gmail API service instance.
+    user_id: User's email address. The special value "me"
+    can be used to indicate the authenticated user.
+    query: String used to filter messages returned.
+    Eg.- 'from:user@some_domain.com' for Messages from a particular sender.
+
+  Returns:
+    List of Messages that match the criteria of the query. Note that the
+    returned list contains Message IDs, you must use get with the
+    appropriate ID to get the details of a Message.
+  """
+  try:
+    response = service.users().messages().list(userId=user_id,
+                                               q=query).execute()
+    messages = []
+    if 'messages' in response:
+      messages.extend(response['messages'])
+
+    while 'nextPageToken' in response:
+      page_token = response['nextPageToken']
+      response = service.users().messages().list(userId=user_id, q=query,
+                                         pageToken=page_token).execute()
+      messages.extend(response['messages'])
+
+    return messages
+  except errors.HttpError, error:
+    print 'An error occurred: %s' % error        
 def main():
-    """Shows basic usage of the Gmail API.
-
-    Creates a Gmail API service object and outputs a list of label names
-    of the user's Gmail account.
-    """
+    #This is the function which asks the user for his query
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('gmail', 'v1', http=http)
-
-    foss_label = get_label_id(service=service, user_id='me', label_name='FOSS')
-
-    print ("FOSS label = " + foss_label)
-
-    print(len(ListMessagesWithLabels(service, "me", [foss_label])))
-
+    lentgh=len(ListMessagesWithLabels(service, "me", [foss_label]))
+    a=raw_input("enter the date : ")
+    messgs=ListMessagesMatchingQuery(service, user_id='me', query= a)
+    for item in messgs:
+        message = GetMsg(service,user_id = "me",msg_id = item['id'])
 if __name__ == '__main__':
     main()
 

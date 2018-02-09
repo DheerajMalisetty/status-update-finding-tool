@@ -188,8 +188,8 @@ def main():
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('gmail', 'v1', http=http)
-    lentgh=len(ListMessagesWithLabels(service, "me", [foss_label]))
     a=raw_input("enter the date : ")
+    a='[foss-2017] Status Update ['+a+']'    
     messgs=ListMessagesMatchingQuery(service, user_id='me', query= a)
     for item in messgs:
         message = GetMsg(service,user_id = "me",msg_id = item['id'])
